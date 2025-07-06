@@ -7,6 +7,7 @@ export interface Tile {
   rank: number;
   redDots?: boolean;
   pair?: string;
+  imagePath: string;
 }
 
 export interface TilePosition {

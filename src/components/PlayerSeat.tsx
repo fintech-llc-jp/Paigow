@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Player } from '../types';
+import { Tile } from './Tile';
+import { TILE_DIMENSIONS } from '../constants/tiles';
 
 interface PlayerSeatProps {
   player?: Player;
@@ -233,33 +235,15 @@ export const PlayerSeat: React.FC<PlayerSeatProps> = ({
           >
             {player.highHand.length > 0 ? (
               player.highHand.map((tile) => (
-                <div
+                <Tile
                   key={tile.id}
+                  tile={tile}
+                  onClick={() => handleTileRemove(tile.id, 'high')}
                   style={{
-                    width: '40px',
-                    height: '55px',
-                    background: 'linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%)',
-                    border: '2px solid #8B4513',
-                    borderRadius: '5px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '8px',
-                    fontWeight: 'bold',
-                    color: '#000',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    width: `${TILE_DIMENSIONS.WIDTH * 0.7}px`,
+                    height: `${TILE_DIMENSIONS.HEIGHT * 0.7}px`,
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTileRemove(tile.id, 'high');
-                  }}
-                >
-                  <div style={{ fontSize: '7px', lineHeight: '1.1', fontWeight: 'bold' }}>{tile.name}</div>
-                  <div style={{ fontSize: '6px', color: '#666', lineHeight: '1' }}>{tile.dots}点</div>
-                </div>
+                />
               ))
             ) : (
               <div style={{ 
@@ -291,33 +275,15 @@ export const PlayerSeat: React.FC<PlayerSeatProps> = ({
           >
             {player.lowHand.length > 0 ? (
               player.lowHand.map((tile) => (
-                <div
+                <Tile
                   key={tile.id}
+                  tile={tile}
+                  onClick={() => handleTileRemove(tile.id, 'low')}
                   style={{
-                    width: '40px',
-                    height: '55px',
-                    background: 'linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%)',
-                    border: '2px solid #8B4513',
-                    borderRadius: '5px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '8px',
-                    fontWeight: 'bold',
-                    color: '#000',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    width: `${TILE_DIMENSIONS.WIDTH * 0.7}px`,
+                    height: `${TILE_DIMENSIONS.HEIGHT * 0.7}px`,
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTileRemove(tile.id, 'low');
-                  }}
-                >
-                  <div style={{ fontSize: '7px', lineHeight: '1.1', fontWeight: 'bold' }}>{tile.name}</div>
-                  <div style={{ fontSize: '6px', color: '#666', lineHeight: '1' }}>{tile.dots}点</div>
-                </div>
+                />
               ))
             ) : (
               <div style={{ 
@@ -351,69 +317,21 @@ export const PlayerSeat: React.FC<PlayerSeatProps> = ({
                 const isSelected = selectedTiles.includes(tile.id);
                 console.log('Rendering tile:', tile, 'selected:', isSelected);
                 return (
-                  <div 
+                  <Tile 
                     key={tile.id || index}
-                    style={{ 
-                      width: '100%', 
-                      height: '55px', 
-                      background: isSelected 
-                        ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
-                        : 'linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%)', 
-                      border: isSelected 
-                        ? '3px solid #FF6B35'
-                        : '2px solid #8B4513',
-                      borderRadius: '6px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      color: isSelected ? '#000' : '#000',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                    tile={tile}
+                    isSelected={isSelected}
+                    onClick={() => handleTileClick(tile.id)}
+                    style={{
+                      width: '100%',
+                      height: '55px',
                       boxShadow: isSelected 
                         ? '0 6px 12px rgba(255,215,0,0.6)'
                         : '0 2px 4px rgba(0,0,0,0.2)',
-                      position: 'relative',
+                      transform: isSelected ? 'scale(1.05)' : 'scale(1)',
                       zIndex: isSelected ? 10 : 1,
-                      transform: isSelected ? 'scale(1.05)' : 'scale(1)'
                     }}
-                    onClick={() => handleTileClick(tile.id)}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.transform = 'scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(255,215,0,0.3)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.2)';
-                      }
-                    }}
-                  >
-                    <div style={{ fontSize: '9px', lineHeight: '1.1', fontWeight: 'bold' }}>{tile.name}</div>
-                    <div style={{ fontSize: '7px', color: '#666', lineHeight: '1' }}>{tile.dots}点</div>
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '-2px',
-                        right: '-2px',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: '#FF6B35',
-                        fontSize: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white'
-                      }}>
-                        ✓
-                      </div>
-                    )}
-                  </div>
+                  />
                 );
               })
             ) : (
