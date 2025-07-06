@@ -14,14 +14,29 @@ interface GameTableProps {
 }
 
 const TableContainer = styled.div`
-  width: 1200px;
-  height: 900px;
+  width: min(1200px, 95vw);
+  height: min(900px, 70vh);
   background: linear-gradient(135deg, #0F5132 0%, #1a6b47 100%);
   border: 4px solid #FFD700;
   border-radius: 400px 400px 50px 50px;
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   overflow: visible;
+  
+  @media (max-width: 768px) {
+    width: 95vw;
+    height: 60vh;
+    min-height: 400px;
+    border-radius: 200px 200px 25px 25px;
+    border-width: 2px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 98vw;
+    height: 50vh;
+    min-height: 350px;
+    border-radius: 150px 150px 20px 20px;
+  }
 `;
 
 const TableSurface = styled.div`

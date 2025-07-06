@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { GameState, Player, Tile } from '../types';
 import { createDeck, shuffleDeck, getOptimalHandArrangement } from '../utils';
 import { GAME_RULES } from '../constants';
+import { determineGameResult, calculatePayout } from '../utils/gameLogic';
+import { soundManager, initializeSounds } from '../utils/soundUtils';
 
 interface GameStore extends GameState {
   // Actions
@@ -63,6 +65,7 @@ export const useGameState = create<GameStore>((set, get) => ({
       isActive: true,
       isDealer: false,
       position: players.length,
+      isReady: false,
       stats: {
         gamesPlayed: 0,
         gamesWon: 0,
@@ -105,6 +108,9 @@ export const useGameState = create<GameStore>((set, get) => ({
     const { players, deck, phase } = get();
     console.log('dealCards called', { phase, playersCount: players.length, deckSize: deck.length });
     
+    // Initialize sounds on first user interaction
+    initializeSounds();
+    
     if (phase !== 'betting') {
       console.log('Wrong phase for dealing:', phase);
       return;
@@ -118,6 +124,9 @@ export const useGameState = create<GameStore>((set, get) => ({
       return;
     }
     
+    // Play deal sound
+    soundManager.playSound('deal');
+    
     let currentDeck = [...deck];
     console.log('Shuffled deck size:', currentDeck.length);
     
@@ -130,6 +139,7 @@ export const useGameState = create<GameStore>((set, get) => ({
           hand: playerTiles,
           highHand: [],
           lowHand: [],
+          isReady: false,
         };
       }
       return player;
@@ -212,18 +222,26 @@ export const useGameState = create<GameStore>((set, get) => ({
       playerId, 
       playerName: player?.name, 
       highHand: player?.highHand.length, 
-      lowHand: player?.lowHand.length 
+      lowHand: player?.lowHand.length,
+      isReady: player?.isReady
     });
     
-    if (!player || player.highHand.length !== 2 || player.lowHand.length !== 2) {
-      console.log('Player not ready - invalid hand arrangement');
+    if (!player || player.highHand.length !== 2 || player.lowHand.length !== 2 || player.isReady) {
+      console.log('Player not ready - invalid hand arrangement or already ready');
       return;
     }
     
+    // Mark player as ready
+    const updatedPlayers = players.map(p => 
+      p.id === playerId ? { ...p, isReady: true } : p
+    );
+    
+    set({ players: updatedPlayers });
+    
     // Check if all players are ready
-    const activePlayers = players.filter(p => p.isActive && p.currentBet > 0);
+    const activePlayers = updatedPlayers.filter(p => p.isActive && p.currentBet > 0);
     const readyPlayers = activePlayers.filter(p => 
-      p.highHand.length === 2 && p.lowHand.length === 2
+      p.highHand.length === 2 && p.lowHand.length === 2 && p.isReady
     );
     
     console.log('Ready check:', { activePlayers: activePlayers.length, readyPlayers: readyPlayers.length });
@@ -260,32 +278,94 @@ export const useGameState = create<GameStore>((set, get) => ({
     // Calculate results and update players
     const updatedPlayers = players.map(player => {
       if (player.isActive && player.currentBet > 0) {
-        // Simple comparison logic - would need proper implementation
-        const won = Math.random() > 0.5; // Placeholder
-        const payout = won ? player.currentBet * 0.95 : -player.currentBet;
+        if (player.highHand.length !== 2 || player.lowHand.length !== 2) {
+          // Player hasn't arranged their hand properly - automatic loss
+          const payout = -player.currentBet;
+          
+          console.log('Player result (invalid hand):', { 
+            name: player.name, 
+            result: 'lose', 
+            payout,
+            originalBet: player.currentBet 
+          });
+          
+          return {
+            ...player,
+            chips: player.chips + payout,
+            currentBet: 0,
+            stats: {
+              ...player.stats,
+              gamesPlayed: player.stats.gamesPlayed + 1,
+              gamesWon: player.stats.gamesWon,
+              totalWinnings: player.stats.totalWinnings + payout,
+              winRate: (player.stats.gamesWon / (player.stats.gamesPlayed + 1)) * 100,
+            },
+          };
+        }
+        
+        // Use proper Paigow logic
+        const playerHighHand: [Tile, Tile] = [player.highHand[0], player.highHand[1]];
+        const playerLowHand: [Tile, Tile] = [player.lowHand[0], player.lowHand[1]];
+        const dealerHighHand: [Tile, Tile] = [updatedDealer.highHand[0], updatedDealer.highHand[1]];
+        const dealerLowHand: [Tile, Tile] = [updatedDealer.lowHand[0], updatedDealer.lowHand[1]];
+        
+        const gameResult = determineGameResult(
+          playerHighHand,
+          playerLowHand,
+          dealerHighHand,
+          dealerLowHand
+        );
+        
+        const payout = calculatePayout(player.currentBet, gameResult.result);
         
         console.log('Player result:', { 
           name: player.name, 
-          won, 
-          payout, 
+          result: gameResult.result,
+          highWin: gameResult.highWin,
+          lowWin: gameResult.lowWin,
+          payout,
           originalBet: player.currentBet 
         });
         
         return {
           ...player,
-          chips: player.chips + payout + (won ? player.currentBet : 0),
+          chips: player.chips + payout + (gameResult.result !== 'lose' ? player.currentBet : 0),
           currentBet: 0,
           stats: {
             ...player.stats,
             gamesPlayed: player.stats.gamesPlayed + 1,
-            gamesWon: player.stats.gamesWon + (won ? 1 : 0),
+            gamesWon: player.stats.gamesWon + (gameResult.result === 'win' ? 1 : 0),
             totalWinnings: player.stats.totalWinnings + payout,
-            winRate: ((player.stats.gamesWon + (won ? 1 : 0)) / (player.stats.gamesPlayed + 1)) * 100,
+            winRate: ((player.stats.gamesWon + (gameResult.result === 'win' ? 1 : 0)) / (player.stats.gamesPlayed + 1)) * 100,
           },
         };
       }
       return player;
     });
+    
+    // Play sound effects based on results
+    const activeResults = updatedPlayers
+      .filter(p => p.isActive)
+      .map(p => {
+        const originalPlayer = players.find(orig => orig.id === p.id);
+        if (!originalPlayer) return null;
+        
+        // Determine result by comparing chips change
+        const chipsChange = p.chips - originalPlayer.chips;
+        if (chipsChange > 0) return 'win';
+        if (chipsChange < 0) return 'lose';
+        return 'push';
+      })
+      .filter(Boolean);
+    
+    // Play sound for the most common result, or win if player won
+    if (activeResults.includes('win')) {
+      soundManager.playSound('win');
+    } else if (activeResults.includes('push')) {
+      soundManager.playSound('push');
+    } else if (activeResults.includes('lose')) {
+      soundManager.playSound('lose');
+    }
     
     console.log('Setting phase to result');
     set({
@@ -316,6 +396,7 @@ export const useGameState = create<GameStore>((set, get) => ({
         highHand: [],
         lowHand: [],
         currentBet: 0,
+        isReady: false,
       })),
     });
   },

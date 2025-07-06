@@ -86,6 +86,23 @@ export const compareHands = (
   return 0; // Tie - dealer wins
 };
 
+export const getHandDescription = (tile1: Tile, tile2: Tile): string => {
+  // Check for special pairs first
+  const specialPairName = getSpecialPairName(tile1, tile2);
+  if (specialPairName) {
+    return specialPairName;
+  }
+  
+  // Check for regular pairs
+  if (isPair(tile1, tile2)) {
+    return `双${tile1.name.replace('牌', '')}`;
+  }
+  
+  // Regular hand value
+  const value = calculateHandValue(tile1, tile2);
+  return `${value}点`;
+};
+
 export const getOptimalHandArrangement = (tiles: Tile[]): {
   highHand: [Tile, Tile];
   lowHand: [Tile, Tile];

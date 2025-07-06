@@ -372,11 +372,19 @@ export const PlayerSeat: React.FC<PlayerSeatProps> = ({
         {(player.highHand.length === 2 && player.lowHand.length === 2) && (
           <ActionButton 
             onClick={() => {
-              console.log('Ready clicked for:', player.name, { highHand: player.highHand.length, lowHand: player.lowHand.length });
-              onAction({ type: 'ready' });
+              console.log('Ready clicked for:', player.name, { highHand: player.highHand.length, lowHand: player.lowHand.length, isReady: player.isReady });
+              if (!player.isReady) {
+                onAction({ type: 'ready' });
+              }
+            }}
+            disabled={player.isReady}
+            style={{
+              opacity: player.isReady ? 0.5 : 1,
+              cursor: player.isReady ? 'not-allowed' : 'pointer',
+              backgroundColor: player.isReady ? '#666' : undefined
             }}
           >
-            Ready
+            {player.isReady ? 'Ready ✓' : 'Ready'}
           </ActionButton>
         )}
       </ActionButtons>

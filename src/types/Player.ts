@@ -13,6 +13,7 @@ export interface Player {
   position: number;
   avatar?: string;
   stats: PlayerStats;
+  isReady: boolean;
 }
 
 export interface PlayerStats {

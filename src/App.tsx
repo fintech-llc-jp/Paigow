@@ -1,23 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { GameTable } from './components';
 import { useGameState } from './hooks';
 import { GAME_RULES } from './constants';
+import { getHandDescription } from './utils/tileUtils';
+import { soundManager } from './utils/soundUtils';
 
 const AppContainer = styled.div`
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  justify-content: flex-start;
+  padding: 10px;
   box-sizing: border-box;
+  overflow-x: auto;
+  
+  @media (max-width: 768px) {
+    padding: 5px;
+    min-height: 100vh;
+    height: auto;
+  }
 `;
 
 const GameHeader = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   text-align: center;
   color: white;
   
@@ -29,33 +38,69 @@ const GameHeader = styled.div`
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+    }
   }
   
   p {
     margin: 5px 0 0 0;
     font-size: 1.1rem;
     color: rgba(255, 255, 255, 0.8);
+    
+    @media (max-width: 768px) {
+      font-size: 0.9rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    margin-bottom: 10px;
   }
 `;
 
 const GameControls = styled.div`
-  margin-top: 20px;
+  margin-top: 15px;
   display: flex;
-  gap: 15px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    margin-top: 10px;
+    gap: 8px;
+    padding: 0 5px;
+  }
 `;
 
 const ControlButton = styled.button.withConfig({
   shouldForwardProp: (prop) => prop !== 'variant',
 })<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  padding: 12px 24px;
+  padding: 12px 20px;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 120px;
+  white-space: nowrap;
+  
+  @media (max-width: 768px) {
+    padding: 10px 16px;
+    font-size: 12px;
+    min-width: 100px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-width: 80px;
+  }
   
   ${props => {
     switch (props.variant) {
@@ -107,6 +152,24 @@ const GamePhaseIndicator = styled.div`
   font-size: 14px;
   font-weight: 600;
   border: 2px solid #FFD700;
+  z-index: 10;
+  
+  @media (max-width: 768px) {
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 15px;
+    border-width: 1px;
+  }
+  
+  @media (max-width: 480px) {
+    top: 5px;
+    right: 5px;
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 10px;
+  }
 `;
 
 const BettingPanel = styled.div`
@@ -117,11 +180,31 @@ const BettingPanel = styled.div`
   color: white;
   padding: 15px;
   border-radius: 10px;
-  min-width: 300px;
+  min-width: 280px;
   max-width: 400px;
   border: 1px solid rgba(255, 215, 0, 0.3);
   max-height: 300px;
   overflow-y: auto;
+  z-index: 10;
+  
+  @media (max-width: 768px) {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 90%;
+    min-width: unset;
+    max-width: unset;
+    margin: 10px auto 0;
+    padding: 12px;
+    max-height: 250px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 95%;
+    padding: 10px;
+    margin: 5px auto 0;
+    max-height: 200px;
+  }
 `;
 
 const ChipButton = styled.button.withConfig({
@@ -153,9 +236,26 @@ const ChipButton = styled.button.withConfig({
     transform: scale(1.1);
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
   }
+  
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 10px;
+    border-width: 2px;
+    margin: 1px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 35px;
+    height: 35px;
+    font-size: 9px;
+    border-width: 1px;
+  }
 `;
 
 const App: React.FC = () => {
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  
   const {
     phase,
     players,
@@ -181,6 +281,12 @@ const App: React.FC = () => {
       addPlayer('You');
     }
   }, []);
+
+  const toggleSound = () => {
+    const newSoundEnabled = !soundEnabled;
+    setSoundEnabled(newSoundEnabled);
+    soundManager.setEnabled(newSoundEnabled);
+  };
 
   const handlePlayerAction = (playerId: string, action: any) => {
     const gameState = useGameState.getState();
@@ -284,21 +390,63 @@ const App: React.FC = () => {
         
         {phase === 'result' && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: '10px', marginBottom: '15px', color: 'white' }}>
+            <div style={{ background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: '10px', marginBottom: '15px', color: 'white', maxWidth: '600px', margin: '0 auto 15px auto' }}>
               <h3 style={{ color: '#FFD700', margin: '0 0 15px 0' }}>Round Results</h3>
-              {players.filter(p => p.isActive).map(player => (
-                <div key={player.id} style={{ margin: '10px 0', padding: '10px', border: '1px solid #FFD700', borderRadius: '5px' }}>
-                  <div style={{ fontWeight: 'bold' }}>{player.name}</div>
-                  <div>Chips: ${player.chips}</div>
-                  <div>Games Won: {player.stats.gamesWon}/{player.stats.gamesPlayed}</div>
+              
+              {/* Dealer's Hand */}
+              {dealer.highHand.length === 2 && dealer.lowHand.length === 2 && (
+                <div style={{ margin: '15px 0', padding: '15px', border: '2px solid #FFD700', borderRadius: '8px', backgroundColor: 'rgba(255,215,0,0.1)' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '10px' }}>ディーラー</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '14px' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: '#FFD700' }}>高手:</div>
+                      <div>{getHandDescription(dealer.highHand[0], dealer.highHand[1])}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: '#FFD700' }}>低手:</div>
+                      <div>{getHandDescription(dealer.lowHand[0], dealer.lowHand[1])}</div>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )}
+              
+              {/* Player Results */}
+              {players.filter(p => p.isActive).map(player => {
+                const hasValidHands = player.highHand.length === 2 && player.lowHand.length === 2;
+                return (
+                  <div key={player.id} style={{ margin: '15px 0', padding: '15px', border: '1px solid #FFD700', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '10px' }}>{player.name}</div>
+                    
+                    {hasValidHands && (
+                      <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '14px', marginBottom: '10px' }}>
+                        <div>
+                          <div style={{ fontWeight: 'bold', color: '#FFD700' }}>高手:</div>
+                          <div>{getHandDescription(player.highHand[0], player.highHand[1])}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 'bold', color: '#FFD700' }}>低手:</div>
+                          <div>{getHandDescription(player.lowHand[0], player.lowHand[1])}</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                      <div>Chips: ${player.chips}</div>
+                      <div>Games Won: {player.stats.gamesWon}/{player.stats.gamesPlayed}</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <ControlButton variant="primary" onClick={nextRound}>
               Next Round
             </ControlButton>
           </div>
         )}
+        
+        <ControlButton onClick={toggleSound}>
+          Sound: {soundEnabled ? 'ON' : 'OFF'}
+        </ControlButton>
         
         <ControlButton variant="danger" onClick={resetGame}>
           Reset Game
