@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { Player } from '../types';
-import { Tile } from './Tile';
 
 interface PlayerSeatProps {
   player?: Player;
@@ -10,10 +9,6 @@ interface PlayerSeatProps {
   onAction: (action: any) => void;
 }
 
-interface TileSelection {
-  selectedTiles: string[];
-  targetHand: 'high' | 'low' | null;
-}
 
 const SeatContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['isActive', 'isCurrentPlayer'].includes(prop),
@@ -155,7 +150,6 @@ export const PlayerSeat: React.FC<PlayerSeatProps> = ({
   onAction 
 }) => {
   const [selectedTiles, setSelectedTiles] = React.useState<string[]>([]);
-  const [targetHand, setTargetHand] = React.useState<'high' | 'low' | null>(null);
   
   // Debug logging
   console.log('PlayerSeat render:', { 

@@ -228,7 +228,6 @@ const App: React.FC = () => {
   };
 
   const activePlayers = players.filter(p => p.isActive);
-  const currentPlayerData = activePlayers.length > 0 ? activePlayers[0] : undefined;
 
   return (
     <AppContainer>
