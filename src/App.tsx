@@ -4,12 +4,22 @@ import { GameTable } from './components';
 import { useGameState } from './hooks';
 import { GAME_RULES } from './constants';
 import { getHandDescription } from './utils/tileUtils';
-import { soundManager } from './utils/soundUtils';
+import { soundManager, initializeSounds } from './utils/soundUtils';
 
 const AppContainer = styled.div`
   width: 100vw;
   min-height: 100vh;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  display: flex;
+  position: relative;
+  
+  @media (max-width: 1200px) {
+    flex-direction: column;
+  }
+`;
+
+const GameArea = styled.div`
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,8 +30,42 @@ const AppContainer = styled.div`
   
   @media (max-width: 768px) {
     padding: 5px;
-    min-height: 100vh;
-    height: auto;
+  }
+`;
+
+const AdSidebar = styled.div`
+  width: 320px;
+  min-height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 1px solid rgba(255, 215, 0, 0.2);
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  
+  @media (max-width: 1200px) {
+    width: 100%;
+    min-height: auto;
+    border-left: none;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    padding: 15px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px;
+    gap: 15px;
+  }
+`;
+
+const AdContainer = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid rgba(255, 215, 0, 0.1);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
   }
 `;
 
@@ -74,6 +118,49 @@ const GameControls = styled.div`
     margin-top: 10px;
     gap: 8px;
     padding: 0 5px;
+  }
+`;
+
+const ResultModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
+`;
+
+const ResultContent = styled.div`
+  background: rgba(0, 0, 0, 0.9);
+  padding: 30px;
+  border-radius: 15px;
+  color: white;
+  max-width: 700px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 2px solid #FFD700;
+  text-align: center;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    max-height: 90vh;
+    border-radius: 10px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+    border-radius: 8px;
   }
 `;
 
@@ -280,6 +367,80 @@ const App: React.FC = () => {
       // Add one demo player for single player mode
       addPlayer('You');
     }
+    
+    // Initialize sounds on first user interaction
+    const handleFirstInteraction = () => {
+      initializeSounds();
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+    
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('keydown', handleFirstInteraction);
+    
+    // Add test banners for local development (Monetag script is now in index.html)
+    const loadLocalTestAds = () => {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        setTimeout(() => {
+          console.log('Local environment - adding test ads');
+          const banner1 = document.getElementById('monetag-ad-banner-1');
+          const banner2 = document.getElementById('monetag-ad-banner-2');
+          
+          if (banner1) {
+            banner1.innerHTML = `
+              <div style="
+                width: 300px; 
+                height: 250px; 
+                background: linear-gradient(45deg, #ff6b6b, #4ecdc4); 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: white; 
+                font-weight: bold; 
+                border-radius: 8px;
+                text-align: center;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+              ">
+                Test Ad 1<br/>
+                (Local Only)<br/>
+                <small style="font-size: 12px; opacity: 0.8;">300x250 Banner</small>
+              </div>
+            `;
+          }
+          
+          if (banner2) {
+            banner2.innerHTML = `
+              <div style="
+                width: 300px; 
+                height: 250px; 
+                background: linear-gradient(45deg, #45b7d1, #96ceb4); 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: white; 
+                font-weight: bold; 
+                border-radius: 8px;
+                text-align: center;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+              ">
+                Test Ad 2<br/>
+                (Local Only)<br/>
+                <small style="font-size: 12px; opacity: 0.8;">300x250 Banner</small>
+              </div>
+            `;
+          }
+        }, 3000);
+      }
+    };
+    
+    // Load test ads for local development
+    const timer = setTimeout(loadLocalTestAds, 1000);
+    
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      clearTimeout(timer);
+    };
   }, []);
 
   const toggleSound = () => {
@@ -337,14 +498,15 @@ const App: React.FC = () => {
 
   return (
     <AppContainer>
-      <GameHeader>
-        <h1>牌九 - Paigow Casino</h1>
-        <p>Traditional Chinese Tile Game</p>
-      </GameHeader>
-      
-      <GamePhaseIndicator>
-        {getPhaseText()} - Round {round}
-      </GamePhaseIndicator>
+      <GameArea>
+        <GameHeader>
+          <h1>牌九 - Paigow Casino</h1>
+          <p>Traditional Chinese Tile Game</p>
+        </GameHeader>
+        
+        <GamePhaseIndicator>
+          {getPhaseText()} - Round {round}
+        </GamePhaseIndicator>
       
       <GameTable
         players={players}
@@ -388,69 +550,17 @@ const App: React.FC = () => {
           </div>
         )}
         
-        {phase === 'result' && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: '10px', marginBottom: '15px', color: 'white', maxWidth: '600px', margin: '0 auto 15px auto' }}>
-              <h3 style={{ color: '#FFD700', margin: '0 0 15px 0' }}>Round Results</h3>
-              
-              {/* Dealer's Hand */}
-              {dealer.highHand.length === 2 && dealer.lowHand.length === 2 && (
-                <div style={{ margin: '15px 0', padding: '15px', border: '2px solid #FFD700', borderRadius: '8px', backgroundColor: 'rgba(255,215,0,0.1)' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '10px' }}>ディーラー</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '14px' }}>
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#FFD700' }}>高手:</div>
-                      <div>{getHandDescription(dealer.highHand[0], dealer.highHand[1])}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#FFD700' }}>低手:</div>
-                      <div>{getHandDescription(dealer.lowHand[0], dealer.lowHand[1])}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Player Results */}
-              {players.filter(p => p.isActive).map(player => {
-                const hasValidHands = player.highHand.length === 2 && player.lowHand.length === 2;
-                return (
-                  <div key={player.id} style={{ margin: '15px 0', padding: '15px', border: '1px solid #FFD700', borderRadius: '8px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '10px' }}>{player.name}</div>
-                    
-                    {hasValidHands && (
-                      <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '14px', marginBottom: '10px' }}>
-                        <div>
-                          <div style={{ fontWeight: 'bold', color: '#FFD700' }}>高手:</div>
-                          <div>{getHandDescription(player.highHand[0], player.highHand[1])}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 'bold', color: '#FFD700' }}>低手:</div>
-                          <div>{getHandDescription(player.lowHand[0], player.lowHand[1])}</div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                      <div>Chips: ${player.chips}</div>
-                      <div>Games Won: {player.stats.gamesWon}/{player.stats.gamesPlayed}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <ControlButton variant="primary" onClick={nextRound}>
-              Next Round
+        {phase !== 'result' && (
+          <>
+            <ControlButton onClick={toggleSound}>
+              Sound: {soundEnabled ? 'ON' : 'OFF'}
             </ControlButton>
-          </div>
+            
+            <ControlButton variant="danger" onClick={resetGame}>
+              Reset Game
+            </ControlButton>
+          </>
         )}
-        
-        <ControlButton onClick={toggleSound}>
-          Sound: {soundEnabled ? 'ON' : 'OFF'}
-        </ControlButton>
-        
-        <ControlButton variant="danger" onClick={resetGame}>
-          Reset Game
-        </ControlButton>
       </GameControls>
       
       {(phase === 'betting' || phase === 'arranging') && activePlayers.length > 0 && (
@@ -479,6 +589,98 @@ const App: React.FC = () => {
           ))}
         </BettingPanel>
       )}
+      
+      {/* Result Modal */}
+      {phase === 'result' && (
+        <ResultModal>
+          <ResultContent>
+            <h3 style={{ color: '#FFD700', margin: '0 0 25px 0', fontSize: '24px' }}>Round Results</h3>
+            
+            {/* Dealer's Hand */}
+            {dealer.highHand.length === 2 && dealer.lowHand.length === 2 && (
+              <div style={{ margin: '20px 0', padding: '20px', border: '2px solid #FFD700', borderRadius: '10px', backgroundColor: 'rgba(255,215,0,0.1)' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>ディーラー</div>
+                <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '16px' }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>高手:</div>
+                    <div>{getHandDescription(dealer.highHand[0], dealer.highHand[1])}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>低手:</div>
+                    <div>{getHandDescription(dealer.lowHand[0], dealer.lowHand[1])}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Player Results */}
+            {players.filter(p => p.isActive).map(player => {
+              const hasValidHands = player.highHand.length === 2 && player.lowHand.length === 2;
+              return (
+                <div key={player.id} style={{ margin: '20px 0', padding: '20px', border: '1px solid #FFD700', borderRadius: '10px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>{player.name}</div>
+                  
+                  {hasValidHands && (
+                    <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '16px', marginBottom: '15px' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>高手:</div>
+                        <div>{getHandDescription(player.highHand[0], player.highHand[1])}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>低手:</div>
+                        <div>{getHandDescription(player.lowHand[0], player.lowHand[1])}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div style={{ fontSize: '14px', opacity: 0.8 }}>
+                    <div>Chips: ${player.chips}</div>
+                    <div>Games Won: {player.stats.gamesWon}/{player.stats.gamesPlayed}</div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            <div style={{ marginTop: '30px', display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <ControlButton variant="primary" onClick={nextRound}>
+                Next Round
+              </ControlButton>
+              <ControlButton onClick={toggleSound}>
+                Sound: {soundEnabled ? 'ON' : 'OFF'}
+              </ControlButton>
+              <ControlButton variant="danger" onClick={resetGame}>
+                Reset Game
+              </ControlButton>
+            </div>
+          </ResultContent>
+        </ResultModal>
+      )}
+      </GameArea>
+      
+      {/* Ad Sidebar */}
+      <AdSidebar>
+        <AdContainer>
+          <div 
+            id="monetag-ad-banner-1" 
+            style={{ 
+              width: '300px', 
+              height: '250px',
+              background: 'transparent'
+            }}
+          ></div>
+        </AdContainer>
+        
+        <AdContainer>
+          <div 
+            id="monetag-ad-banner-2" 
+            style={{ 
+              width: '300px', 
+              height: '250px',
+              background: 'transparent'
+            }}
+          ></div>
+        </AdContainer>
+      </AdSidebar>
     </AppContainer>
   );
 };
