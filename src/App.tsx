@@ -5,6 +5,8 @@ import { useGameState } from './hooks';
 import { GAME_RULES } from './constants';
 import { getHandDescription } from './utils/tileUtils';
 import { soundManager, initializeSounds } from './utils/soundUtils';
+import { useLanguage } from './contexts/LanguageContext';
+import LanguageToggle from './components/LanguageToggle';
 
 const AppContainer = styled.div`
   width: 100vw;
@@ -192,7 +194,7 @@ const ControlButton = styled.button.withConfig({
 const GamePhaseIndicator = styled.div`
   position: absolute;
   top: 20px;
-  right: 20px;
+  right: 120px;
   background: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 10px 20px;
@@ -204,7 +206,7 @@ const GamePhaseIndicator = styled.div`
   
   @media (max-width: 768px) {
     top: 10px;
-    right: 10px;
+    right: 80px;
     padding: 6px 12px;
     font-size: 12px;
     border-radius: 15px;
@@ -213,7 +215,7 @@ const GamePhaseIndicator = styled.div`
   
   @media (max-width: 480px) {
     top: 5px;
-    right: 5px;
+    right: 60px;
     padding: 4px 8px;
     font-size: 10px;
     border-radius: 10px;
@@ -303,6 +305,7 @@ const ChipButton = styled.button.withConfig({
 
 const App: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const { t } = useLanguage();
   
   const {
     phase,
@@ -326,9 +329,20 @@ const App: React.FC = () => {
     if (gameState.players.length === 0) {
       initializeGame();
       // Add one demo player for single player mode
-      addPlayer('You');
+      addPlayer(t('player.default'));
     }
-    
+  }, [initializeGame, addPlayer, t]);
+
+  // Update player name when language changes
+  useEffect(() => {
+    const gameState = useGameState.getState();
+    if (gameState.players.length > 0 && gameState.players[0].name !== t('player.default')) {
+      // Update the first player's name to match the current language
+      gameState.players[0].name = t('player.default');
+    }
+  }, [t]);
+
+  useEffect(() => {
     // Initialize sounds on first user interaction
     const handleFirstInteraction = () => {
       initializeSounds();
@@ -393,17 +407,17 @@ const App: React.FC = () => {
   const getPhaseText = () => {
     switch (phase) {
       case 'betting':
-        return 'Place Your Bets';
+        return t('phase.betting');
       case 'dealing':
-        return 'Dealing Cards';
+        return t('phase.dealing');
       case 'arranging':
-        return 'Arrange Your Hand';
+        return t('phase.arranging');
       case 'comparing':
-        return 'Comparing Hands';
+        return t('phase.comparing');
       case 'result':
-        return 'Round Results';
+        return t('phase.result');
       default:
-        return 'Game Ready';
+        return t('phase.ready');
     }
   };
 
@@ -411,14 +425,15 @@ const App: React.FC = () => {
 
   return (
     <AppContainer>
+      <LanguageToggle />
       <GameArea>
         <GameHeader>
-          <h1>牌九 - Paigow Casino</h1>
-          <p>Traditional Chinese Tile Game</p>
+          <h1>{t('game.title')}</h1>
+          <p>{t('game.subtitle')}</p>
         </GameHeader>
         
         <GamePhaseIndicator>
-          {getPhaseText()} - Round {round}
+          {getPhaseText()} - {t('round.number')} {round}
         </GamePhaseIndicator>
       
       <GameTable
@@ -438,39 +453,39 @@ const App: React.FC = () => {
               onClick={dealCards}
               disabled={activePlayers.length === 0 || activePlayers.every(p => p.currentBet === 0)}
             >
-              Deal Cards
+              {t('button.dealCards')}
             </ControlButton>
-            <ControlButton onClick={() => addPlayer(`Player ${players.length + 1}`)}>
-              Add Player
+            <ControlButton onClick={() => addPlayer(`${t('player.number')} ${players.length + 1}`)}>
+              {t('button.addPlayer')}
             </ControlButton>
           </>
         )}
         
         {phase === 'arranging' && (
           <div style={{ textAlign: 'center', color: 'white', background: 'rgba(0,0,0,0.7)', padding: '15px', borderRadius: '10px' }}>
-            <h3 style={{ color: '#FFD700', margin: '0 0 10px 0' }}>Arrange Your Hand</h3>
-            <p style={{ margin: '3px 0', fontSize: '13px' }}>You have 4 tiles. Arrange them into High and Low hands (2 tiles each).</p>
-            <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Manual:</strong> Click tiles to select, then click High/Low area to move them</p>
-            <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>Auto:</strong> Click "Auto" to arrange automatically</p>
-            <p style={{ margin: '3px 0', fontSize: '12px' }}>Click "Ready" when both hands have 2 tiles</p>
+            <h3 style={{ color: '#FFD700', margin: '0 0 10px 0' }}>{t('instruction.arrange')}</h3>
+            <p style={{ margin: '3px 0', fontSize: '13px' }}>{t('instruction.tiles')}</p>
+            <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>{t('instruction.manual')}</strong></p>
+            <p style={{ margin: '3px 0', fontSize: '12px' }}><strong>{t('instruction.autoArrange')}</strong></p>
+            <p style={{ margin: '3px 0', fontSize: '12px' }}>{t('instruction.readyWhen')}</p>
           </div>
         )}
         
         {phase === 'comparing' && (
           <div style={{ textAlign: 'center', color: 'white', background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: '10px' }}>
-            <h3 style={{ color: '#FFD700', margin: '0 0 10px 0' }}>Comparing Hands...</h3>
-            <p>Dealer is revealing their tiles</p>
+            <h3 style={{ color: '#FFD700', margin: '0 0 10px 0' }}>{t('instruction.comparing')}</h3>
+            <p>{t('instruction.dealerRevealing')}</p>
           </div>
         )}
         
         {phase !== 'result' && (
           <>
             <ControlButton onClick={toggleSound}>
-              Sound: {soundEnabled ? 'ON' : 'OFF'}
+              {t('button.sound')}: {soundEnabled ? t('sound.on') : t('sound.off')}
             </ControlButton>
             
             <ControlButton variant="danger" onClick={resetGame}>
-              Reset Game
+              {t('button.resetGame')}
             </ControlButton>
           </>
         )}
@@ -478,12 +493,12 @@ const App: React.FC = () => {
       
       {(phase === 'betting' || phase === 'arranging') && activePlayers.length > 0 && (
         <BettingPanel>
-          <h4>{phase === 'betting' ? 'Place Your Bets' : 'Game Status'}</h4>
+          <h4>{phase === 'betting' ? t('status.placeYourBets') : t('status.gameStatus')}</h4>
           {activePlayers.map(player => (
             <div key={player.id} style={{ marginBottom: '10px', padding: '10px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '5px' }}>
               <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{player.name}</div>
-              <div style={{ fontSize: '12px', marginBottom: '8px' }}>Chips: ${player.chips} | Bet: ${player.currentBet}</div>
-              <div style={{ fontSize: '11px', color: '#FFD700' }}>Hand: {player.hand.length} tiles</div>
+              <div style={{ fontSize: '12px', marginBottom: '8px' }}>{t('status.chips')}: ${player.chips} | {t('status.bet')}: ${player.currentBet}</div>
+              <div style={{ fontSize: '11px', color: '#FFD700' }}>{t('status.hand')}: {player.hand.length} {t('status.tiles')}</div>
               {phase === 'betting' && (
                 <div>
                   {GAME_RULES.BETTING.CHIP_DENOMINATIONS.map(amount => (
@@ -507,19 +522,19 @@ const App: React.FC = () => {
       {phase === 'result' && (
         <ResultModal>
           <ResultContent>
-            <h3 style={{ color: '#FFD700', margin: '0 0 25px 0', fontSize: '24px' }}>Round Results</h3>
+            <h3 style={{ color: '#FFD700', margin: '0 0 25px 0', fontSize: '24px' }}>{t('result.roundResults')}</h3>
             
             {/* Dealer's Hand */}
             {dealer.highHand.length === 2 && dealer.lowHand.length === 2 && (
               <div style={{ margin: '20px 0', padding: '20px', border: '2px solid #FFD700', borderRadius: '10px', backgroundColor: 'rgba(255,215,0,0.1)' }}>
-                <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>ディーラー</div>
+                <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>{t('result.dealer')}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '16px' }}>
                   <div>
-                    <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>高手:</div>
+                    <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>{t('result.highHand')}:</div>
                     <div>{getHandDescription(dealer.highHand[0], dealer.highHand[1])}</div>
                   </div>
                   <div>
-                    <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>低手:</div>
+                    <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>{t('result.lowHand')}:</div>
                     <div>{getHandDescription(dealer.lowHand[0], dealer.lowHand[1])}</div>
                   </div>
                 </div>
@@ -536,19 +551,19 @@ const App: React.FC = () => {
                   {hasValidHands && (
                     <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '16px', marginBottom: '15px' }}>
                       <div>
-                        <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>高手:</div>
+                        <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>{t('result.highHand')}:</div>
                         <div>{getHandDescription(player.highHand[0], player.highHand[1])}</div>
                       </div>
                       <div>
-                        <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>低手:</div>
+                        <div style={{ fontWeight: 'bold', color: '#FFD700', marginBottom: '5px' }}>{t('result.lowHand')}:</div>
                         <div>{getHandDescription(player.lowHand[0], player.lowHand[1])}</div>
                       </div>
                     </div>
                   )}
                   
                   <div style={{ fontSize: '14px', opacity: 0.8 }}>
-                    <div>Chips: ${player.chips}</div>
-                    <div>Games Won: {player.stats.gamesWon}/{player.stats.gamesPlayed}</div>
+                    <div>{t('status.chips')}: ${player.chips}</div>
+                    <div>{t('result.gamesWon')}: {player.stats.gamesWon}/{player.stats.gamesPlayed}</div>
                   </div>
                 </div>
               );
@@ -556,13 +571,13 @@ const App: React.FC = () => {
             
             <div style={{ marginTop: '30px', display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <ControlButton variant="primary" onClick={nextRound}>
-                Next Round
+                {t('button.nextRound')}
               </ControlButton>
               <ControlButton onClick={toggleSound}>
-                Sound: {soundEnabled ? 'ON' : 'OFF'}
+                {t('button.sound')}: {soundEnabled ? t('sound.on') : t('sound.off')}
               </ControlButton>
               <ControlButton variant="danger" onClick={resetGame}>
-                Reset Game
+                {t('button.resetGame')}
               </ControlButton>
             </div>
           </ResultContent>
