@@ -11,15 +11,12 @@ const AppContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   display: flex;
+  flex-direction: column;
   position: relative;
-  
-  @media (max-width: 1200px) {
-    flex-direction: column;
-  }
 `;
 
 const GameArea = styled.div`
-  flex: 1;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,42 +27,6 @@ const GameArea = styled.div`
   
   @media (max-width: 768px) {
     padding: 5px;
-  }
-`;
-
-const AdSidebar = styled.div`
-  width: 320px;
-  min-height: 100vh;
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 1px solid rgba(255, 215, 0, 0.2);
-  padding: 20px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  
-  @media (max-width: 1200px) {
-    width: 100%;
-    min-height: auto;
-    border-left: none;
-    border-top: 1px solid rgba(255, 215, 0, 0.2);
-    padding: 15px;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 10px;
-    gap: 15px;
-  }
-`;
-
-const AdContainer = styled.div`
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 15px;
-  border: 1px solid rgba(255, 215, 0, 0.1);
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
   }
 `;
 
@@ -378,63 +339,15 @@ const App: React.FC = () => {
     document.addEventListener('click', handleFirstInteraction);
     document.addEventListener('keydown', handleFirstInteraction);
     
-    // Add test banners for local development (Monetag script is now in index.html)
-    const loadLocalTestAds = () => {
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        setTimeout(() => {
-          console.log('Local environment - adding test ads');
-          const banner1 = document.getElementById('monetag-ad-banner-1');
-          const banner2 = document.getElementById('monetag-ad-banner-2');
-          
-          if (banner1) {
-            banner1.innerHTML = `
-              <div style="
-                width: 300px; 
-                height: 250px; 
-                background: linear-gradient(45deg, #ff6b6b, #4ecdc4); 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                color: white; 
-                font-weight: bold; 
-                border-radius: 8px;
-                text-align: center;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-              ">
-                Test Ad 1<br/>
-                (Local Only)<br/>
-                <small style="font-size: 12px; opacity: 0.8;">300x250 Banner</small>
-              </div>
-            `;
-          }
-          
-          if (banner2) {
-            banner2.innerHTML = `
-              <div style="
-                width: 300px; 
-                height: 250px; 
-                background: linear-gradient(45deg, #45b7d1, #96ceb4); 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                color: white; 
-                font-weight: bold; 
-                border-radius: 8px;
-                text-align: center;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-              ">
-                Test Ad 2<br/>
-                (Local Only)<br/>
-                <small style="font-size: 12px; opacity: 0.8;">300x250 Banner</small>
-              </div>
-            `;
-          }
-        }, 3000);
-      }
+    // Initialize InPagePush ads (no specific containers needed)
+    const initializeAds = () => {
+      setTimeout(() => {
+        console.log('InPagePush ads should be automatically handled by Monetag script');
+      }, 1000);
     };
     
-    // Load test ads for local development
-    const timer = setTimeout(loadLocalTestAds, 1000);
+    // Initialize ads
+    const timer = setTimeout(initializeAds, 1000);
     
     return () => {
       document.removeEventListener('click', handleFirstInteraction);
@@ -657,30 +570,6 @@ const App: React.FC = () => {
       )}
       </GameArea>
       
-      {/* Ad Sidebar */}
-      <AdSidebar>
-        <AdContainer>
-          <div 
-            id="monetag-ad-banner-1" 
-            style={{ 
-              width: '300px', 
-              height: '250px',
-              background: 'transparent'
-            }}
-          ></div>
-        </AdContainer>
-        
-        <AdContainer>
-          <div 
-            id="monetag-ad-banner-2" 
-            style={{ 
-              width: '300px', 
-              height: '250px',
-              background: 'transparent'
-            }}
-          ></div>
-        </AdContainer>
-      </AdSidebar>
     </AppContainer>
   );
 };
